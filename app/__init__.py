@@ -1,0 +1,7 @@
+"""FruitDetector FastAPI service package."""
+
+
+
+
+
+

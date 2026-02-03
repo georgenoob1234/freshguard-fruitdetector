@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  fruitdetector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fruitdetector
+    ports:
+      - "${SERVICE_PORT:-8300}:${SERVICE_PORT:-8300}"
+    environment:
+      SERVICE_PORT: ${SERVICE_PORT:-8300}
+      # FruitDetector-specific settings (FRUIT_ prefix)
+      FRUIT_MODEL_PATH: ${FRUIT_MODEL_PATH:-models/fruitdetector.pt}
+      FRUIT_CONFIDENCE_THRESHOLD: ${FRUIT_CONFIDENCE_THRESHOLD:-0.1}
+      FRUIT_DEFAULT_IMGSZ: ${FRUIT_DEFAULT_IMGSZ:-320}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${SERVICE_PORT:-8300}/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - fruitstack
+
+networks:
+  fruitstack:
+    driver: bridge
+
