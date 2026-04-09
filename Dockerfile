@@ -25,6 +25,7 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # ------------------------------------------------------------------------------
@@ -55,9 +56,9 @@ WORKDIR /app
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
+# Application code and YOLO weights from this repo (see models/fruitdetector.pt)
 COPY --chown=appuser:appuser app/ ./app/
-COPY --chown=appuser:appuser models/ ./models/
+COPY --chown=appuser:appuser models/ /app/models/
 
 # Switch to non-root user
 USER appuser
@@ -67,7 +68,7 @@ EXPOSE ${SERVICE_PORT}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${SERVICE_PORT}/health')" || exit 1
+    CMD python -c "import os,urllib.request; p=os.environ.get('SERVICE_PORT','8300'); urllib.request.urlopen('http://127.0.0.1:%s/health' % p, timeout=3)"
 
 # Run uvicorn
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${SERVICE_PORT}"]
